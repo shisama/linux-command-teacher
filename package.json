@@ -8,7 +8,7 @@
   },
   "author": "Masashi Hirano",
   "license": "ISC",
-  "dependencies": {
+  "devDependencies": {
     "cheerio-httpcli": "^0.7.2"
   }
 }
