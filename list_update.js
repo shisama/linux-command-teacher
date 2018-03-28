@@ -67,5 +67,5 @@ Promise.all([
   getCommandList(),
   backup(backupdir)
 ]).then(function([result] = []) {
-  fs.writeFileSync('./list.json', JSON.stringify(result.list), {encoding: 'utf-8'})
+  fs.writeFileSync('./list.json', JSON.stringify(result.list, null, "  "), {encoding: 'utf-8'})
 });
