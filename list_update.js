@@ -63,8 +63,9 @@ function backup(dir, callback) {
 
 const backupdir = path.join(__dirname, "backup");
 
-getCommandList().then(function(result) {
-  return backup(backupdir);
-}).then(function() {
+Promise.all([
+  getCommandList(),
+  backup(backupdir)
+]).then(function([result] = []) {
   fs.writeFileSync('./list.json', JSON.stringify(result.list), {encoding: 'utf-8'})
 });
