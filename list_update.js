@@ -2,21 +2,35 @@ const cheerioClient = require('cheerio-httpcli');
 const fs = require('fs');
 const path = require('path');
 
-const getCommandList = function(){
-  return searchClearly( "http://hocolamogg.com/unix/linux_com/index.html", function($){
-    var results = [];
-    $("table[class='maintable'] tr").each( function (i) {
-      var target = $(this);
-      var anchor = target.find("a").eq(0);
-      var summary = target.find("td").eq(1).text();
+const baseUrl = "http://hocolamogg.com/unix/linux_com/";
+const backupdir = path.join(__dirname, "backup");
 
-      if (!anchor.attr("href")) {
+const getCommandList = function(url){
+  return searchClearly(url, function($){
+    var results = [];
+
+    const kinou = $(".kinou").text();
+    if (kinou) {
+      return {
+        kinou: kinou
+      }
+    }
+
+    $("table[class='maintable'] tr").each( function (i) {
+      const target = $(this);
+      const anchor = target.find("a").eq(0);
+      const summary = target.find("td").eq(1).text();
+      const href = anchor.attr("href");
+
+      if (!href) {
         return;
       }
 
       results.push({
-        "name" : anchor.text(),
-        "summary": summary
+        name : anchor.text(),
+        summary: summary,
+        href: href,
+        kinou: kinou
       });
     });
     return results;
@@ -30,9 +44,7 @@ const getCommandList = function(){
           reject( cheerioResult.error );
         } else {
           const $ = cheerioResult.$;
-          resolve({
-            "list" : clearly( $ )
-          });
+          resolve(clearly( $ ));
         }
       }, function( error ){
         reject( error );
@@ -61,11 +73,21 @@ function backup(dir, callback) {
   });
 }
 
-const backupdir = path.join(__dirname, "backup");
-
-Promise.all([
-  getCommandList(),
-  backup(backupdir)
-]).then(function([result] = []) {
-  fs.writeFileSync('./list.json', JSON.stringify(result.list, null, "  "), {encoding: 'utf-8'})
-});
+(async () => {
+  const [
+    commands
+  ] = await Promise.all([
+    getCommandList(`${baseUrl}index.html`),
+    backup(backupdir)
+  ]);
+  const list = [];
+  for (const command of commands) {
+    const each = await getCommandList(baseUrl + command.href);
+    list.push({
+      name: command.name,
+      summary: command.summary,
+      explanation: each.kinou
+    })
+  }
+  fs.writeFileSync('./list.json', JSON.stringify(list, null, "  "), {encoding: 'utf-8'})
+})();
